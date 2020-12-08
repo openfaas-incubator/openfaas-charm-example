@@ -66,21 +66,25 @@ Conceptual diagram, some elements are missing.
 
 ![Overview](https://github.com/openfaas/faas/blob/master/docs/of-workflow.png?raw=true)
 
-
-
-
-
 # With local microk8s
 
 ```
 juju add-model dev1
 charmcraft build && juju deploy ./openfaas.charm
+
+# Check results:
 microk8s.kubectl logs  pod/openfaas-operator-0 -n dev1 -f
+
+juju status
+
+juju debug-log
 ```
 
 # With multipass
 
 ## Requires additional memory, RAM and adequate CPU
+
+```
 multipass launch -m 8G -c 2 -n juju -d 80G
 multipass exec juju /bin/bash
 
@@ -108,3 +112,4 @@ multipass info juju
 charmcraft build
 
 juju deploy ./name.charm
+```
