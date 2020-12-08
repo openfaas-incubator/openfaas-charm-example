@@ -1,0 +1,366 @@
+version: 3
+containers:
+  - name: gitlab
+    image: gitlab/latest
+    imagePullPolicy: Always
+    command:
+      - sh
+      - -c
+      - |
+        set -ex
+        echo "do some stuff here for gitlab container"
+    args: ["doIt", "--debug"]
+    workingDir: "/path/to/here"
+    ports:
+      - containerPort: 80
+        name: fred
+        protocol: TCP
+      - containerPort: 443
+        name: mary
+    kubernetes:
+      securityContext:
+        runAsNonRoot: true
+        privileged: true
+      livenessProbe:
+        initialDelaySeconds: 10
+        httpGet:
+          path: /ping
+          port: 8080
+      readinessProbe:
+        initialDelaySeconds: 10
+        httpGet:
+          path: /pingReady
+          port: www
+      startupProbe:
+        httpGet:
+          path: /healthz
+          port: liveness-port
+        failureThreshold: 30
+        periodSeconds: 10
+    envConfig:
+      attr: foo=bar; name["fred"]="blogs";
+      foo: bar
+      brackets: '["hello", "world"]'
+      restricted: "yes"
+      switch: on
+      special: p@ssword's
+      number: 5242880
+      my-resource-limit:
+        resource:
+          container-name: container1
+          resource: requests.cpu
+          divisor: 1m
+    volumeConfig:
+      - name: configuration
+        mountPath: /var/lib/foo
+        files:
+          - path: file1
+            mode: 644
+            content: |
+              [config]
+              foo: bar
+      - name: myhostpath
+        mountPath: /host/etc/cni/net.d
+        hostPath:
+          path: /etc/cni/net.d
+          type: Directory
+      - name: cache-volume
+        mountPath: /empty-dir
+        emptyDir:
+          medium: Memory
+      - name: log_level
+        mountPath: /log-config/log_level
+        configMap:
+          name: log-config
+          defaultMode: 511
+          files:
+            - key: log_level
+              path: log_level
+              mode: 511
+      - name: mysecret2
+        mountPath: /secrets
+        secret:
+          name: mysecret2
+          defaultMode: 511
+          files:
+            - key: password
+              path: my-group/my-password
+              mode: 511
+  - name: gitlab-helper
+    image: gitlab-helper/latest
+    ports:
+      - containerPort: 8080
+        protocol: TCP
+  - name: secret-image-user
+    imageDetails:
+      imagePath: staging.registry.org/testing/testing-image@sha256:deed-beef
+      username: docker-registry
+      password: hunter2
+  - name: just-image-details
+    imageDetails:
+      imagePath: testing/no-secrets-needed@sha256:deed-beef
+  - name: gitlab-init
+    image: gitlab-init/latest
+    imagePullPolicy: Always
+    init: true
+    command:
+      - sh
+      - -c
+      - |
+        set -ex
+        echo "do some stuff here for gitlab-init container"
+    args: ["doIt", "--debug"]
+    workingDir: "/path/to/here"
+    ports:
+      - containerPort: 80
+        name: fred
+        protocol: TCP
+      - containerPort: 443
+        name: mary
+    envConfig:
+      brackets: '["hello", "world"]'
+      foo: bar
+      restricted: "yes"
+      switch: on
+      special: p@ssword's
+configMaps:
+  mydata:
+    foo: bar
+    hello: world
+service:
+  annotations:
+    foo: bar
+  scalePolicy: serial
+  updateStrategy:
+    type: Recreate
+    rollingUpdate:
+      maxUnavailable: 10%
+      maxSurge: 25%
+serviceAccount:
+  automountServiceAccountToken: true
+  roles:
+    - global: true
+      rules:
+        - apiGroups: [""]
+          resources: ["pods"]
+          verbs: ["get", "watch", "list"]
+kubernetesResources:
+  services:
+    - name: my-service1
+      labels:
+        foo: bar
+      spec:
+        selector:
+          app: MyApp
+        ports:
+          - protocol: TCP
+            port: 80
+            targetPort: 9376
+    - name: my-service2
+      labels:
+        app: test
+      annotations:
+        cloud.google.com/load-balancer-type: "Internal"
+      spec:
+        selector:
+          app: MyApp
+        ports:
+          - protocol: TCP
+            port: 80
+            targetPort: 9376
+        type: LoadBalancer
+  serviceAccounts:
+    - name: k8sServiceAccount1
+      automountServiceAccountToken: true
+      roles:
+        - name: k8sRole
+          rules:
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["get", "watch", "list"]
+            - nonResourceURLs: ["/healthz", "/healthz/*"] # '*' in a nonResourceURL is a suffix glob match
+              verbs: ["get", "post"]
+            - apiGroups: ["rbac.authorization.k8s.io"]
+              resources: ["clusterroles"]
+              verbs: ["bind"]
+              resourceNames: ["admin", "edit", "view"]
+        - name: k8sClusterRole
+          global: true
+          rules:
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["get", "watch", "list"]
+  pod:
+    annotations:
+      foo: baz
+    labels:
+      foo: bax
+    restartPolicy: OnFailure
+    activeDeadlineSeconds: 10
+    terminationGracePeriodSeconds: 20
+    securityContext:
+      runAsNonRoot: true
+      supplementalGroups: [1, 2]
+    readinessGates:
+      - conditionType: PodScheduled
+    dnsPolicy: ClusterFirstWithHostNet
+    hostNetwork: true
+    hostPID: true
+    priorityClassName: system-cluster-critical
+    priority: 2000000000
+  secrets:
+    - name: build-robot-secret
+      type: Opaque
+      stringData:
+        config.yaml: |-
+          apiUrl: "https://my.api.com/api/v1"
+          username: fred
+          password: shhhh
+    - name: another-build-robot-secret
+      type: Opaque
+      data:
+        username: YWRtaW4=
+        password: MWYyZDFlMmU2N2Rm
+  customResourceDefinitions:
+    - name: tfjobs.kubeflow.org
+      labels:
+        foo: bar
+        juju-global-resource-lifecycle: model
+      spec:
+        group: kubeflow.org
+        scope: Cluster
+        names:
+          kind: TFJob
+          singular: tfjob
+          plural: tfjobs
+        version: v1
+        versions:
+          - name: v1
+            served: true
+            storage: true
+          - name: v1beta2
+            served: true
+            storage: false
+        conversion:
+          strategy: None
+        preserveUnknownFields: false
+        additionalPrinterColumns:
+          - name: Worker
+            type: integer
+            description: Worker attribute.
+            jsonPath: .spec.tfReplicaSpecs.Worker
+        validation:
+          openAPIV3Schema:
+            properties:
+              spec:
+                properties:
+                  tfReplicaSpecs:
+                    properties:
+                      Worker:
+                        properties:
+                          replicas:
+                            type: integer
+                            minimum: 1
+                      PS:
+                        properties:
+                          replicas:
+                            type: integer
+                            minimum: 1
+                      Chief:
+                        properties:
+                          replicas:
+                            type: integer
+                            minimum: 1
+                            maximum: 1
+  customResources:
+    tfjobs.kubeflow.org:
+      - apiVersion: "kubeflow.org/v1"
+        kind: "TFJob"
+        metadata:
+          name: "dist-mnist-for-e2e-test"
+        labels:
+          foo: bar
+          juju-global-resource-lifecycle: model
+        spec:
+          tfReplicaSpecs:
+            PS:
+              replicas: 2
+              restartPolicy: Never
+              template:
+                spec:
+                  containers:
+                    - name: tensorflow
+                      image: kubeflow/tf-dist-mnist-test:1.0
+            Worker:
+              replicas: 4
+              restartPolicy: Never
+              template:
+                spec:
+                  containers:
+                    - name: tensorflow
+                      image: kubeflow/tf-dist-mnist-test:1.0
+  ingressResources:
+    - name: test-ingress
+      labels:
+        foo: bar
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: /
+      spec:
+        rules:
+          - http:
+              paths:
+                - path: /testpath
+                  backend:
+                    serviceName: test
+                    servicePort: 80
+  mutatingWebhookConfigurations:
+    - name: example-mutatingwebhookconfiguration
+      labels:
+        foo: bar
+      annotations:
+        juju.io/disable-name-prefix: "true"
+      webhooks:
+        - name: "example.mutatingwebhookconfiguration.com"
+          failurePolicy: Ignore
+          clientConfig:
+            service:
+              name: apple-service
+              namespace: apples
+              path: /apple
+            caBundle: "YXBwbGVz"
+          namespaceSelector:
+            matchExpressions:
+              - key: production
+                operator: DoesNotExist
+          rules:
+            - apiGroups:
+                - ""
+              apiVersions:
+                - v1
+              operations:
+                - CREATE
+                - UPDATE
+              resources:
+                - pods
+  validatingWebhookConfigurations:
+    - name: pod-policy.example.com
+      labels:
+        foo: bar
+      annotations:
+        juju.io/disable-name-prefix: "true"
+      webhooks:
+        - name: "pod-policy.example.com"
+          rules:
+            - apiGroups: [""]
+              apiVersions: ["v1"]
+              operations: ["CREATE"]
+              resources: ["pods"]
+              scope: "Namespaced"
+          clientConfig:
+            service:
+              namespace: "example-namespace"
+              name: "example-service"
+            caBundle: "YXBwbGVz"
+          admissionReviewVersions: ["v1", "v1beta1"]
+          sideEffects: None
+          timeoutSeconds: 5
