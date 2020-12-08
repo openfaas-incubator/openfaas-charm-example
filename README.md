@@ -66,6 +66,11 @@ Conceptual diagram, some elements are missing.
 
 ![Overview](https://github.com/openfaas/faas/blob/master/docs/of-workflow.png?raw=true)
 
+## Reference examples
+
+https://git.launchpad.net/charm-k8s-postgresql/tree/src/charm.py#n116
+https://github.com/camille-rodriguez/metallb-bundle/blob/master/charms/metallb-speaker/src/charm.py#L223
+
 # With local microk8s
 
 ```
