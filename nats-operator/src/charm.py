@@ -18,17 +18,18 @@ class NatsCharm(CharmBase):
         super().__init__(*args)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(
-            self.on["nats"].relation_joined, self._on_nats_joined
+            self.on["nats-address"].relation_joined, self._on_nats_address_joined
         )
 
-    def _on_nats_joined(self, event):
-        logger.info("nats joined")
+    def _on_nats_address_joined(self, event):
+        logger.info("NATS NATS joined")
         ingress_ip = self.model.get_binding(event.relation).network.ingress_address
         ingress_port = self.model.config["nats_port"]
         host = "{}:{}".format(ingress_ip, ingress_port)
-        logger.info("Host provided: {}".format(host))
+        logger.info("NATS host: {}".format(host))
 
         event.relation.data[self.app].update({"ip": host})
+        event.relation.data[self.app]["ip"] = host
 
         private_ip = str(self.model.get_binding(event.relation).network.bind_address)
         event.relation.data[self.unit].update({"private_address": private_ip})

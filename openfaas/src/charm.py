@@ -25,11 +25,14 @@ class OpenfaasCharm(CharmBase):
         super().__init__(*args)
         self._stored.set_default(namespace=os.environ["JUJU_MODEL_NAME"])
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.on["nats"].relation_joined, self._on_nats_joined)
+        self.framework.observe(self.on["nats-address"].relation_joined, self._on_nats_address_joined)
 
-    def _on_nats_joined(self, event):
-        logger.info("NATS config changed")
-        logger.info(event.relation)
+    def _on_nats_address_joined(self, event):
+        logger.info("OpenFaaS NATS joined")
+        
+        # How do we get the host?
+        logger.info("data from unit")
+        logger.info("{}".format(event.relation.data[self.unit].get("ip")))
 
     def _on_config_changed(self, _=None): 
         logger.debug("config_change")

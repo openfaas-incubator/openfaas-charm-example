@@ -8,3 +8,7 @@ options:
     default: 4222
     description: The port NATS will listen on.
     type: int
+  ip:
+    default: ""
+    description: IP for NATS
+    type: string

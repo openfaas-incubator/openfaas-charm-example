@@ -7,5 +7,5 @@ summary: |
   TODO: fill out the charm's summary
 series: [kubernetes]
 provides:
-    nats:
-        interface: generic-ip-port
+    nats-address:
+        interface: nats-address

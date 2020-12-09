@@ -7,7 +7,7 @@ Usage:
 
 ```bash
 (
-    export N=8
+    export N=20
     juju add-model d$N
     cd nats-operator
     charmcraft build && juju deploy ./nats.charm

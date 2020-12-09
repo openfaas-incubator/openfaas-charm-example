@@ -8,5 +8,5 @@ summary: |
 series: [kubernetes]
 
 requires:
-  nats:
-    interface: generic-ip-port
+    nats-address:
+        interface: nats-address
