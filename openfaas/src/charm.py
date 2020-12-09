@@ -25,6 +25,11 @@ class OpenfaasCharm(CharmBase):
         super().__init__(*args)
         self._stored.set_default(namespace=os.environ["JUJU_MODEL_NAME"])
         self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on["nats"].relation_joined, self._on_nats_joined)
+
+    def _on_nats_joined(self, event):
+        logger.info("NATS config changed")
+        logger.info(event.relation)
 
     def _on_config_changed(self, _=None): 
         logger.debug("config_change")
@@ -66,7 +71,11 @@ class OpenfaasCharm(CharmBase):
         password = self.model.config["admin_password"]
 
         vol_config = [
-            {"name": "auth", "mountPath": "/var/secrets", "secret": {"name": "basic-auth"}},
+            {
+            "name": "auth", 
+            "mountPath": "/var/secrets", 
+            "secret": {"name": "basic-auth"}
+            },
         ]
 
 # "functions_provider_url": "http://192.168.0.35:8080",

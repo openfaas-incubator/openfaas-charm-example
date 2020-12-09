@@ -13,7 +13,6 @@ spec:
     plural: profiles
     singular: profile
   scope: Namespaced
-  version: v1
   versions:
   - name: v1
     schema:
