@@ -15,7 +15,8 @@ Usage:
 
     cd openfaas
     charmcraft build && juju deploy ./openfaas.charm 
-
+    cd ..
+    
     juju relate openfaas nats
 )
 
