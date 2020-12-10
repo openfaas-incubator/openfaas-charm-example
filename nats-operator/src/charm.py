@@ -17,22 +17,26 @@ class NatsCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(
-            self.on["nats-address"].relation_joined, self._on_nats_address_joined
-        )
+        self.framework.observe(self.on["nats-address"].relation_joined, self._on_nats_address_joined)
+        self.framework.observe(self.on["nats-address"].relation_changed, self._on_nats_address_changed)
+
+    def _on_nats_address_changed(self, event):
+        logger.info("changed {} {} {}".format(self.app.name, self.app, vars(event.relation.data)))
+        ingress_ip = self.model.get_binding(event.relation).network.ingress_address
+
+        logger.info("NATS changed IP: {}".format(ingress_ip))
+
+        other_relation_data = event.relation.data[self.unit]
+        other_relation_data['ip'] = "{}".format(ingress_ip)
 
     def _on_nats_address_joined(self, event):
-        logger.info("NATS NATS joined")
+        logger.info("joined {} {} {}".format(self.app.name, self.app, vars(event.relation.data)))
         ingress_ip = self.model.get_binding(event.relation).network.ingress_address
-        ingress_port = self.model.config["nats_port"]
-        host = "{}:{}".format(ingress_ip, ingress_port)
-        logger.info("NATS host: {}".format(host))
 
-        event.relation.data[self.app].update({"ip": host})
-        event.relation.data[self.app]["ip"] = host
+        logger.info("NATS joined IP: {}".format(ingress_ip))
 
-        private_ip = str(self.model.get_binding(event.relation).network.bind_address)
-        event.relation.data[self.unit].update({"private_address": private_ip})
+        other_relation_data = event.relation.data[self.unit]
+        other_relation_data['ip'] = "{}".format(ingress_ip)
 
 
     def _on_config_changed(self, _=None):

@@ -24,23 +24,42 @@ class OpenfaasCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
         self._stored.set_default(namespace=os.environ["JUJU_MODEL_NAME"])
+        self._stored.set_default(nats_ip="")
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.on["nats-address"].relation_joined, self._on_nats_address_joined)
+        self.framework.observe(self.on["nats-address"].relation_joined, self._on_nats_relation_joined)
+        self.framework.observe(self.on["nats-address"].relation_changed, self._on_nats_relation_changed)
 
-    def _on_nats_address_joined(self, event):
-        logger.info("OpenFaaS NATS joined")
-        
-        # How do we get the host?
-        logger.info("data from unit")
-        logger.info("{}".format(event.relation.data[self.unit].get("ip")))
+    def _on_nats_relation_changed(self, event):
+        ip = event.relation.data[event.unit].get("ip")
+
+        if ip == None:
+            return
+        self._stored.nats_ip = ip
+
+        logger.info("OF - nats says: {}".format(ip)
+
+    def _on_nats_relation_joined(self, event):
+        ip = event.relation.data[event.unit].get("ip")
+
+        if ip == None:
+            return
+        self._stored.nats_ip = ip
+
+        logger.info("OF - nats says: {}".format(ip)
 
     def _on_config_changed(self, _=None): 
-        logger.debug("config_change")
-        print("config_change")
+        logger.info("OpenFaaS config_change")
+        # if not self.unit.is_leader():
+        #     self.unit.status = ActiveStatus()
+        #     return
 
-        if not self.unit.is_leader():
-            self.unit.status = ActiveStatus()
+        nats_ip = self._stored.nats_ip
+
+        if nats_ip == "":
+            self.unit.status = BlockedStatus("OpenFaaS needs a NATS relation")
             return
+        
+        logger.info("OpenFaaS nats_ip = {}", nats_ip)
 
         pod_spec = self._build_pod_spec()
         self.model.pod.set_spec(pod_spec)

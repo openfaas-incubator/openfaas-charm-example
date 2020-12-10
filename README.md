@@ -6,8 +6,10 @@
 Usage:
 
 ```bash
+
+
 (
-    export N=20
+    export N=14
     juju add-model d$N
     cd nats-operator
     charmcraft build && juju deploy ./nats.charm
@@ -22,4 +24,13 @@ Usage:
 
 juju status
 juju debug-log
+
+
+
+
+
+
+
+
+
 ```
