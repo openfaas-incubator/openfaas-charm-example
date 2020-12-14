@@ -8,7 +8,7 @@ import logging
 from ops.charm import CharmBase
 from ops.main import main
 from ops.framework import StoredState
-from ops.model import ActiveStatus
+from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
 import os
 from base64 import b64encode
 
@@ -36,7 +36,8 @@ class OpenfaasCharm(CharmBase):
             return
         self._stored.nats_ip = ip
 
-        logger.info("OF - nats says: {}".format(ip)
+        logger.info("OF - nats says: {}".format(ip))
+        self._on_config_changed()
 
     def _on_nats_relation_joined(self, event):
         ip = event.relation.data[event.unit].get("ip")
@@ -45,7 +46,8 @@ class OpenfaasCharm(CharmBase):
             return
         self._stored.nats_ip = ip
 
-        logger.info("OF - nats says: {}".format(ip)
+        logger.info("OF - nats says: {}".format(ip))
+        self._on_config_changed()
 
     def _on_config_changed(self, _=None): 
         logger.info("OpenFaaS config_change")
@@ -58,8 +60,10 @@ class OpenfaasCharm(CharmBase):
         if nats_ip == "":
             self.unit.status = BlockedStatus("OpenFaaS needs a NATS relation")
             return
-        
-        logger.info("OpenFaaS nats_ip = {}", nats_ip)
+
+        self.unit.status = MaintenanceStatus('Setting pod spec.')
+
+        logger.info("OpenFaaS building pod spec with nats_ip {}".format(nats_ip))
 
         pod_spec = self._build_pod_spec()
         self.model.pod.set_spec(pod_spec)
@@ -141,14 +145,19 @@ class OpenfaasCharm(CharmBase):
                     "imageDetails": {"imagePath": "openfaas/gateway:0.20.2"},
                     "ports": [{"containerPort": 8080, "protocol": "TCP","name":"gateway"}],
                     "envConfig": {
-                        "functions_provider_url": "http://127.0.0.1:8081",
+                        "faas_nats_address": self._stored.nats_ip,
+                        "faas_nats_port": "4222",
+                        "functions_provider_url": "http://127.0.0.1:8081/",
                         "direct_functions": "false",
                         "basic_auth": "true",
+                        "faas_nats_channel": "faas-request",
                         "secret_mount_path": "/var/secrets",
                         "faas_prometheus_host": "192.168.0.35",
                         "faas_prometheus_port": "9090",
                         "auth_pass_body": "false",
                         "auth_proxy_url": "http://127.0.0.1:8083/validate",
+                        "scale_from_zero": "false",
+                        "direct_functions": "false",
                     },
                     "volumeConfig": vol_config,
                 },
@@ -180,8 +189,6 @@ class OpenfaasCharm(CharmBase):
                 }
             ]
         }
-
-        logger.debug(json.dumps(spec))
 
         return spec
 
