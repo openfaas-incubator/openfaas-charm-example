@@ -1,8 +1,16 @@
 ## OpenFaaS Charm example
 
+## Introduction
+
+This repo is part of a Proof of Concept using the [Canonical Operator framework](https://github.com/canonical/operator)
+
+The charm is not for production use, is not maintained and is not fully functional.
+
+We are not accepting contributions.
+
 ## Components
 
-OpenFaaS consists of the following components:
+[OpenFaaS](https://github.com/openfaas/faas/) consists of the following components:
 
 * gateway - the REST API and UI, requires NATS and Prometheus
 * gateway.provider - a sidecar which provides a Kubernetes operator for creating functions and secrets for functions
